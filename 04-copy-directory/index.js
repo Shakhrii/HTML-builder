@@ -41,6 +41,22 @@ const getFilesFromFolder = (srcPath) => {
   });
 };
 
+async function updateFiles(srcPath, destPath) {
+  const srcPathFiles = await getFilesFromFolder(srcPath);
+  const destPathFiles = await getFilesFromFolder(destPath);
+
+  for (let file of destPathFiles) {
+    let filePath = path.join(destPath, file);
+    if (await isFile(filePath)) {
+      if (isFileRemoved(file, srcPathFiles)) {
+        removeFile(path.join(destPath, file));
+      }
+    } else {
+      updateFiles(path.join(srcPath, file), path.join(destPath, file));
+    }
+  }
+}
+
 const isFile = (file) => {
   return new Promise(function (resolve, reject) {
     fs.stat(file, (err, stats) => {
@@ -57,4 +73,21 @@ const isFile = (file) => {
   });
 };
 
+const isFileRemoved = (file, files) => {
+  if (files.includes(file)) {
+    return false;
+  } else {
+    return true;
+  }
+};
+
+const removeFile = (filePath) => {
+  fs.unlink(filePath, (err) => {
+    if (err) {
+      console.error(err);
+    }
+  });
+};
+
 copyFolder(srcPath, destPath);
+updateFiles(srcPath, destPath);
