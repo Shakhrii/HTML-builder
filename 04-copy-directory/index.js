@@ -52,7 +52,11 @@ async function updateFiles(srcPath, destPath) {
         removeFile(path.join(destPath, file));
       }
     } else {
-      updateFiles(path.join(srcPath, file), path.join(destPath, file));
+      if (isFileRemoved(file, srcPathFiles)) {
+        removeFolder(path.join(destPath, file));
+      } else {
+        updateFiles(path.join(srcPath, file), path.join(destPath, file));
+      }
     }
   }
 }
@@ -87,6 +91,10 @@ const removeFile = (filePath) => {
       console.error(err);
     }
   });
+};
+
+const removeFolder = (folderPath) => {
+  fs.rm(folderPath, { recursive: true }, () => {});
 };
 
 copyFolder(srcPath, destPath);
