@@ -3,6 +3,7 @@ const path = require('path');
 const pathTemplate = path.join(__dirname, 'template.html');
 const pathComponent = path.join(__dirname, 'components');
 const pathProjectDist = path.join(__dirname, 'project-dist');
+const pathStyles = path.join(pathProjectDist, 'style.css');
 
 async function readFile(pathFile) {
   return new Promise(function (resolve, reject) {
@@ -41,6 +42,38 @@ function getFolderFiles(path) {
   });
 }
 
+const isFile = (file) => {
+  return new Promise(function (resolve, reject) {
+    fs.stat(file, (err, stats) => {
+      if (err) {
+        reject(err);
+      } else {
+        if (stats.isFile()) {
+          resolve(true);
+        } else {
+          resolve(false);
+        }
+      }
+    });
+  });
+};
+
+async function getStylesFiles() {
+  const pathStylesFolder = path.join(__dirname, 'styles');
+  const files = await getFolderFiles(pathStylesFolder);
+  const styleFiles = [];
+
+  for (let file of files) {
+    const pathFile = path.join(pathStylesFolder, file);
+    if (await isFile(pathFile)) {
+      if (path.extname(pathFile) === '.css') {
+        styleFiles.push(pathFile);
+      }
+    }
+  }
+  return styleFiles;
+}
+
 async function replaceContent() {
   let templateFileString = await readFile(pathTemplate);
   const components = await getFolderFiles(pathComponent);
@@ -64,8 +97,21 @@ async function replaceContent() {
   saveToFile(path.join(pathProjectDist, 'index.html'), templateFileString);
 }
 
+async function buildStyles() {
+  const files = await getStylesFiles();
+  console.log(files);
+  const destination = fs.createWriteStream(pathStyles);
+
+  for (let file of files) {
+    console.log(file);
+    const origin = fs.createReadStream(file);
+    origin.pipe(destination);
+  }
+}
+
 async function doScript() {
   replaceContent();
+  buildStyles();
 }
 
 doScript();
