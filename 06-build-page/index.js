@@ -2,6 +2,7 @@ const fs = require('fs');
 const path = require('path');
 const pathTemplate = path.join(__dirname, 'template.html');
 const pathComponent = path.join(__dirname, 'components');
+const pathProjectDist = path.join(__dirname, 'project-dist');
 
 async function readFile(pathFile) {
   return new Promise(function (resolve, reject) {
@@ -42,7 +43,6 @@ function getFolderFiles(path) {
 
 async function replaceContent() {
   let templateFileString = await readFile(pathTemplate);
-  console.log(templateFileString);
   const components = await getFolderFiles(pathComponent);
 
   for (let component of components) {
@@ -51,11 +51,17 @@ async function replaceContent() {
       const content = await readFile(path.join(pathComponent, component));
       templateFileString = templateFileString.replaceAll(
         `{{${name}}}`,
-        content,
+        content.trim(),
       );
     }
   }
-  saveToFile(pathTemplate, templateFileString);
+
+  fs.mkdir(pathProjectDist, { recursive: true }, (err) => {
+    if (err) {
+      return console.error(err);
+    }
+  });
+  saveToFile(path.join(pathProjectDist, 'index.html'), templateFileString);
 }
 
 async function doScript() {
