@@ -28,10 +28,9 @@ async function readFile(pathFile) {
   });
 }
 
-const saveToFile = (path, input) => {
-  const ws = fs.createWriteStream(path);
-  ws.write(input);
-};
+async function saveToFile(path, input) {
+  fs.promises.writeFile(path, input);
+}
 
 function getFolderFiles(path) {
   return new Promise(function (resolve, reject) {
@@ -77,7 +76,7 @@ async function getStylesFiles() {
 }
 
 async function copyFolder(srcPath, destPath) {
-  fs.mkdir(destPath, { recursive: true }, (err) => {
+  fs.promises.mkdir(destPath, { recursive: true }, (err) => {
     if (err) {
       return console.error(err);
     }
@@ -97,7 +96,7 @@ async function copyFolder(srcPath, destPath) {
         },
       );
     } else {
-      copyFolder(filePath, path.join(destPath, file));
+      await copyFolder(filePath, path.join(destPath, file));
     }
   }
 }
@@ -162,27 +161,23 @@ async function replaceContent() {
       return console.error(err);
     }
   });
-  saveToFile(path.join(pathProjectDist, 'index.html'), templateFileString);
+  await saveToFile(
+    path.join(pathProjectDist, 'index.html'),
+    templateFileString,
+  );
 }
 
 async function buildStyles() {
   const files = await getStylesFiles();
-  const destination = fs.createWriteStream(pathProjectDistStyles);
-
+  let fileString = '';
   for (let file of files) {
-    const origin = fs.createReadStream(file);
-    origin.pipe(destination);
+    fileString += await readFile(file);
   }
+  await saveToFile(pathProjectDistStyles, fileString);
 }
 
 async function copyAssets() {
-  fs.mkdir(pathProjectDistAssets, { recursive: true }, (err) => {
-    if (err) {
-      return console.error(err);
-    }
-  });
-
-  copyFolder(pathAssets, pathProjectDistAssets);
+  await copyFolder(pathAssets, pathProjectDistAssets);
 }
 
 async function updateFolders() {
@@ -190,10 +185,10 @@ async function updateFolders() {
 }
 
 async function doScript() {
-  replaceContent();
-  buildStyles();
-  copyAssets();
-  updateFolders();
+  await replaceContent();
+  await buildStyles();
+  await copyAssets();
+  await updateFolders();
 }
 
 doScript();

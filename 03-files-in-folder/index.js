@@ -20,7 +20,9 @@ const showFileInfo = (file) => {
     } else {
       if (stats.isFile()) {
         console.log(
-          `${path.basename(file)} - ${path.extname(file)} - ${stats.size}bytes`,
+          `${path.parse(file).name} - ${path
+            .extname(file)
+            .replace('.', '')} - ${stats.size}bytes`,
         );
       }
     }

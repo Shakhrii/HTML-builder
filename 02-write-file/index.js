@@ -7,7 +7,7 @@ const rl = readline.createInterface({ input, output });
 const pathFile = path.join(__dirname, 'input.txt');
 const ws = fs.createWriteStream(pathFile);
 
-rl.setPrompt('Type something you want ');
+rl.setPrompt('Type something you want\n');
 rl.prompt();
 rl.on('line', (input) => {
   if (input.trim() === 'exit') {
