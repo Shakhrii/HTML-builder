@@ -23,6 +23,11 @@ async function readFile(pathFile) {
   });
 }
 
+const saveToFile = (path, input) => {
+  const ws = fs.createWriteStream(path);
+  ws.write(input);
+};
+
 function getFolderFiles(path) {
   return new Promise(function (resolve, reject) {
     fs.readdir(path, (err, files) => {
@@ -43,8 +48,6 @@ async function replaceContent() {
   for (let component of components) {
     if (path.extname(component) === '.html') {
       const name = path.basename(component).slice(0, -5);
-      console.log('name ' + name);
-      console.log(`{{${name}}}`);
       const content = await readFile(path.join(pathComponent, component));
       templateFileString = templateFileString.replaceAll(
         `{{${name}}}`,
@@ -52,7 +55,7 @@ async function replaceContent() {
       );
     }
   }
-  console.log(templateFileString);
+  saveToFile(pathTemplate, templateFileString);
 }
 
 async function doScript() {
