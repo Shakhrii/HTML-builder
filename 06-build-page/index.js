@@ -4,6 +4,7 @@ const pathTemplate = path.join(__dirname, 'template.html');
 const pathComponent = path.join(__dirname, 'components');
 const pathProjectDist = path.join(__dirname, 'project-dist');
 const pathStyles = path.join(pathProjectDist, 'style.css');
+const pathAssets = path.join(pathProjectDist, 'assets');
 
 async function readFile(pathFile) {
   return new Promise(function (resolve, reject) {
@@ -74,6 +75,32 @@ async function getStylesFiles() {
   return styleFiles;
 }
 
+async function copyFolder(srcPath, destPath) {
+  fs.mkdir(destPath, { recursive: true }, (err) => {
+    if (err) {
+      return console.error(err);
+    }
+  });
+
+  let files = await getFolderFiles(srcPath);
+  for (let file of files) {
+    let filePath = path.join(srcPath, file);
+    if (await isFile(filePath)) {
+      fs.copyFile(
+        path.join(srcPath, file),
+        path.join(destPath, file),
+        (err) => {
+          if (err) {
+            console.error(err);
+          }
+        },
+      );
+    } else {
+      copyFolder(filePath, path.join(destPath, file));
+    }
+  }
+}
+
 async function replaceContent() {
   let templateFileString = await readFile(pathTemplate);
   const components = await getFolderFiles(pathComponent);
@@ -109,9 +136,20 @@ async function buildStyles() {
   }
 }
 
+async function copyAssets() {
+  fs.mkdir(pathAssets, { recursive: true }, (err) => {
+    if (err) {
+      return console.error(err);
+    }
+  });
+
+  copyFolder(path.join(__dirname, 'assets'), pathAssets);
+}
+
 async function doScript() {
   replaceContent();
   buildStyles();
+  copyAssets();
 }
 
 doScript();
