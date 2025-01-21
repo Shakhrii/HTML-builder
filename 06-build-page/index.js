@@ -2,9 +2,11 @@ const fs = require('fs');
 const path = require('path');
 const pathTemplate = path.join(__dirname, 'template.html');
 const pathComponent = path.join(__dirname, 'components');
+const pathStyles = path.join(__dirname, 'styles');
+const pathAssets = path.join(__dirname, 'assets');
 const pathProjectDist = path.join(__dirname, 'project-dist');
-const pathStyles = path.join(pathProjectDist, 'style.css');
-const pathAssets = path.join(pathProjectDist, 'assets');
+const pathProjectDistStyles = path.join(pathProjectDist, 'style.css');
+const pathProjectDistAssets = path.join(pathProjectDist, 'assets');
 
 async function readFile(pathFile) {
   return new Promise(function (resolve, reject) {
@@ -60,12 +62,11 @@ const isFile = (file) => {
 };
 
 async function getStylesFiles() {
-  const pathStylesFolder = path.join(__dirname, 'styles');
-  const files = await getFolderFiles(pathStylesFolder);
+  const files = await getFolderFiles(pathStyles);
   const styleFiles = [];
 
   for (let file of files) {
-    const pathFile = path.join(pathStylesFolder, file);
+    const pathFile = path.join(pathStyles, file);
     if (await isFile(pathFile)) {
       if (path.extname(pathFile) === '.css') {
         styleFiles.push(pathFile);
@@ -101,6 +102,46 @@ async function copyFolder(srcPath, destPath) {
   }
 }
 
+const isFileRemoved = (file, files) => {
+  if (files.includes(file)) {
+    return false;
+  } else {
+    return true;
+  }
+};
+
+const removeFile = (filePath) => {
+  fs.unlink(filePath, (err) => {
+    if (err) {
+      console.error(err);
+    }
+  });
+};
+
+const removeFolder = (folderPath) => {
+  fs.rm(folderPath, { recursive: true }, () => {});
+};
+
+async function updateFiles(srcPath, destPath) {
+  const srcPathFiles = await getFolderFiles(srcPath);
+  const destPathFiles = await getFolderFiles(destPath);
+
+  for (let file of destPathFiles) {
+    let filePath = path.join(destPath, file);
+    if (await isFile(filePath)) {
+      if (isFileRemoved(file, srcPathFiles)) {
+        removeFile(path.join(destPath, file));
+      }
+    } else {
+      if (isFileRemoved(file, srcPathFiles)) {
+        removeFolder(path.join(destPath, file));
+      } else {
+        updateFiles(path.join(srcPath, file), path.join(destPath, file));
+      }
+    }
+  }
+}
+
 async function replaceContent() {
   let templateFileString = await readFile(pathTemplate);
   const components = await getFolderFiles(pathComponent);
@@ -126,30 +167,33 @@ async function replaceContent() {
 
 async function buildStyles() {
   const files = await getStylesFiles();
-  console.log(files);
-  const destination = fs.createWriteStream(pathStyles);
+  const destination = fs.createWriteStream(pathProjectDistStyles);
 
   for (let file of files) {
-    console.log(file);
     const origin = fs.createReadStream(file);
     origin.pipe(destination);
   }
 }
 
 async function copyAssets() {
-  fs.mkdir(pathAssets, { recursive: true }, (err) => {
+  fs.mkdir(pathProjectDistAssets, { recursive: true }, (err) => {
     if (err) {
       return console.error(err);
     }
   });
 
-  copyFolder(path.join(__dirname, 'assets'), pathAssets);
+  copyFolder(pathAssets, pathProjectDistAssets);
+}
+
+async function updateFolders() {
+  updateFiles(pathAssets, pathProjectDistAssets);
 }
 
 async function doScript() {
   replaceContent();
   buildStyles();
   copyAssets();
+  updateFolders();
 }
 
 doScript();
